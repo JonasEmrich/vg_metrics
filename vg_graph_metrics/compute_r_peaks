@@ -1,0 +1,14 @@
+import numpy as np
+from tqdm import tqdm
+from read_data import ReadMainzData 
+from vg_beat_detectors import FastNVG
+
+
+RMD = ReadMainzData()
+for record in tqdm(RMD.get_record_list(num=40)):
+    t, x, fs = RMD.load_record(record)
+    detector = FastNVG(sampling_frequency=fs)
+    rpeaks = detector.find_peaks(x)
+
+    np.save("/home/jemrich/mdata_rpeaks/"+record, rpeaks)
+    
