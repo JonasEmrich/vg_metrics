@@ -11,3 +11,4 @@ for record in tqdm(RMD.get_record_list(num=40)):
     rpeaks = detector.find_peaks(x)
 
     np.save("/home/jemrich/mdata_rpeaks/"+record, rpeaks)
+    
