@@ -27,3 +27,7 @@
 /venv
 /mdata
 .gitconfig
+vg_graph_metrics/plot_example.py
+.gitignore
+vg_graph_metrics/testing.ipynb
+vg_graph_metrics/Priorisierung_LZEKG_Export_TU_Darmstadt.xlsx
