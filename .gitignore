@@ -31,3 +31,5 @@ vg_graph_metrics/plot_example.py
 .gitignore
 vg_graph_metrics/testing.ipynb
 vg_graph_metrics/Priorisierung_LZEKG_Export_TU_Darmstadt.xlsx
+vg_graph_metrics/__pycache__/read_data.cpython-311.pyc
+vg_graph_metrics/__pycache__/vg_metric.cpython-311.pyc
