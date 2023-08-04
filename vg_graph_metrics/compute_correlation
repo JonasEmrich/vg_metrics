@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import wfdb
 from scipy import signal
 import pandas as pd
+import multiprocessing as mp
 
 from vg_metric import VisGraphMetric
 from tqdm import tqdm
@@ -65,8 +66,8 @@ def calc_correlations(values, indices, labels, rr, record, VGM, metrics):
             DC = np.corrcoef(DC_true, DC_pred, rowvar=False)[0,1]
             ALL = np.corrcoef(values, m, rowvar=False)[0,1]
 
-            if np.any(np.array([ALL, AC, DC]) > 0.7):
-                print(f"\n {record}: {metric_name}_{str(VGM.directed)}_{str(VGM.edge_weight)}_{VGM.beats_per_window} \t AC: {AC} \t DC: {DC} \t ALL: {ALL}")
+            #if np.any(np.array([ALL, AC, DC]) > 0.7):
+            #    print(f"{record}: {metric_name}_{str(VGM.directed)}_{str(VGM.edge_weight)}_{VGM.beats_per_window} \t AC: {AC} \t DC: {DC} \t ALL: {ALL}")
 
             data.append([record, metric_name, ALL, AC, DC, VGM.beats_per_window, str(VGM.edge_weight), str(VGM.directed), freq_domain])  
 
@@ -104,10 +105,11 @@ RMD = ReadMainzData()
 #     correlation_per_record(record, metrics, edge_weights, directions, freq_domain, beats_per_window)
 #     break
 
-import multiprocessing as mp
+
 print("Number of processors: ", mp.cpu_count())
-with mp.Pool(processes=mp.cpu_count()) as pool:
-    progress_bar = tqdm(total=40, desc="records")
-    r = tqdm(pool.map(correlation_per_record, RMD.get_record_list(num=40)), total=40, desc="records")
+pool = mp.Pool(processes=mp.cpu_count())
+for result in tqdm(pool.imap(correlation_per_record, RMD.get_record_list(start=0, num=140)), total=140, desc="records"):
+    pass
+
 
 
