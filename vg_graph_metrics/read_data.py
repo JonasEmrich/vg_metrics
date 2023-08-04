@@ -54,9 +54,3 @@ class ReadMainzData():
 
         return time, signal, fs
 
-
-
-
-
-
-

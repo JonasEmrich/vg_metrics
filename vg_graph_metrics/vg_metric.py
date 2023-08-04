@@ -69,9 +69,6 @@ class VisGraphMetric:
 
     Parameters
     ----------
-    sampling_frequency : int
-        The sampling frequency of the signal (in Hz, samples/second).
-        Defaults to 250
     graph_type : str
         Specifies the visibility graph transformation used for computation. Has to be one of ["nvg", "hvg"].
         Defaults to ``"nvg"``
@@ -84,10 +81,10 @@ class VisGraphMetric:
         Has to be one of [None, 'slope', 'abs_slope', 'angle', 'abs_angle', 'distance', 'sq_distance', 'v_distance',
         'abs_v_distance', 'h_distance', 'abs_h_distance']. For further details consult the ts2vg package.
         Defaults to ``None``
-    window_length : float
-        Length of on data segment (in seconds!) used in the segment-wise processing of the signal. Defaults to 2
-    window_overlap : float
-        Overlap percentage (between 0 and 1) of the data segments used in the segment-wise computation. Defaults to 0.5
+    beats_per_window : int
+        Length of data segment (in beats/samples) used in segment-wise processing of the signal. Generated graph will be of this size. Defaults to 4
+    beats_per_step : int
+        Number of samples (beats) to move between segment-wise calculation. A step size of beats_per_window would result in a segment-wise calculation with 50% overlap. Defaults to 0.5
     freq_domain : bool
         Specifies if the visibility graph from which the metrics are generated is generated from the input signal in 
         the time domain (False) or frequency domain (True). Defaults to False
@@ -98,8 +95,8 @@ class VisGraphMetric:
                  graph_type="nvg",
                  direction='top_to_bottom',
                  edge_weight=None,
-                 beats_per_step=25,
-                 beats_per_window=50,
+                 beats_per_window=4,
+                 beats_per_step=25,                 
                  freq_domain=False
                  ):
 
@@ -145,7 +142,10 @@ class VisGraphMetric:
             defaults to `"all"` which results in the calculation of all available metrics, while passing a list of the preferred metrics 
             result in the calculation of those (e.g. `['average_clustering','node_connectivity']`).
             NOTE: The choice of whether using a directed or undirected graph results in a different set of available metrics!
-
+        quiet: 
+            specifies if warnings are displayed when trying to calculate metrics that are not supported for the current choice of parameters.
+            If 'False' the metric is skipped without printing a message. Defaults to False.
+            
         Returns
         -------
         output : dict{tupel(metrics, window_indices)}
@@ -180,11 +180,11 @@ class VisGraphMetric:
             L = 1
             window_idxs = [0]
 
-        # initialize output 
+        # initialize output
+        output = {} 
         if metrics == "all":
             metrics = self._metrics_list.keys()
-        
-        output = {}
+        # parse metrics and initialize output dict
         for name in metrics:
             (function, attr) = self._metrics_list[name]
             if self.directed is None and 'undirected' not in attr:
@@ -215,12 +215,6 @@ class VisGraphMetric:
             # compute vg graph
             vg = self._ts2vg(s)
             G = self._vg2networkx(vg)
-            """             print(G.nodes, min(G.nodes), max(G.nodes))
-            print(nx.minimum_cut_value(G, min(G.nodes), max(G.nodes), "weight"))
-            import matplotlib.pyplot as plt
-
-            nx.draw_networkx(G, with_labels=True)
-            plt.show() """
 
             for name in output.keys():
                 (function, attr) = self._metrics_list[name]
@@ -293,6 +287,7 @@ class VisGraphMetric:
         yf = scipy_fft(ts)
         return 2.0/N * np.abs(yf[0:N//2])
 
+### metric related functions ###
 def _shortest_path_length_left_to_right(G):
     a = min(G.nodes)
     b = max(G.nodes)
@@ -321,11 +316,11 @@ def _maximum_flow_value_left_to_right(G):
     return np.nan
 
 def _get_st(G):
+    "get source (left) and target(right) nodes for a directed graph with direction left to right"
     return min(G.nodes), max(G.nodes)
 
 def _get_mid(G):
-    # returns the middle node for a given graph
-    # for a odd number of nodes, the mddle right one is returned
+    "returns the middle node for a given graph. for an even number of nodes, the node to the right of the middle is returned"
     a = min(G.nodes)
     b = max(G.nodes)
     if len(G) % 2 == 0:
