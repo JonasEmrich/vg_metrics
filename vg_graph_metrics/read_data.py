@@ -37,7 +37,8 @@ class ReadMainzData():
 
     def get_record_list(self, start=0, num=None):
         """ Returns a list of all records, or if 'num' is specified, only the prvided number of records. """
-        return self.records[start:num+start]
+        end = None if num is None else num+start
+        return self.records[start:end]
     
     def load_record(self, name, sampfrom=0, sampto=None):
         """ Returns time, signal, and sampling frequency for a given record 'name'. If 'sampfrom' or 'sampto' are given the signal is truncated accordingly."""
