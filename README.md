@@ -7,5 +7,7 @@ This repository holds my workspace for exploring the ability of several visibili
 * compute_correlation.py: a script to compute the acceleration/deceleration capacity for ECG records and correlate those with visibility graph metrics
 * read_data.py: helper class to load long-term ECG recordings
 * compute_r_peaks.py: helper script to compute R-peaks of ECG recordings using visibility graph based R-peak detectors
+* analyze_correlations.ipynb: notebook for analyzing the correlation values in the .csv file
+* (correct_r_peaks: approach to correct the rr-series) 
 
 
