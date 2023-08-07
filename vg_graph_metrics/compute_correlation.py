@@ -7,6 +7,7 @@ import wfdb
 from scipy import signal
 import pandas as pd
 import multiprocessing as mp
+import os
 
 from vg_metric import VisGraphMetric
 from tqdm import tqdm
@@ -49,22 +50,26 @@ def calc_correlations(values, indices, labels, rr, record, VGM, metrics):
 
         m = VGM.calc_metric(rr, metrics=metrics, quiet=True)
         for metric_name, (m, ix_m) in m.items():
-            ix_m += beats_per_window//2 # shift to middle of window
-            # get common indices
-            idx = np.intersect1d(indices, ix_m)
+            _values = values.copy()
+            _indices = indices.copy()
+            _labels = labels.copy() 
 
-            values = values[np.in1d(indices, idx)]
+            ix_m += VGM.beats_per_window//2 # shift to middle of window
+            # get common indices
+            idx = np.intersect1d(_indices, ix_m)
+
+            _values = _values[np.in1d(_indices, idx)]
             m = m[np.in1d(ix_m, idx)]
-            labels = labels[np.in1d(indices, idx)]
+            _labels = _labels[np.in1d(_indices, idx)]
             
-            AC_true = values[labels == "AC"]
-            AC_pred = m[labels == "AC"]
-            DC_true = values[labels == "DC"]
-            DC_pred = m[labels == "DC"]
+            AC_true = _values[_labels == "AC"]
+            AC_pred = m[_labels == "AC"]
+            DC_true = _values[_labels == "DC"]
+            DC_pred = m[_labels == "DC"]
 
             AC = np.corrcoef(AC_true, AC_pred, rowvar=False)[0,1]
             DC = np.corrcoef(DC_true, DC_pred, rowvar=False)[0,1]
-            ALL = np.corrcoef(values, m, rowvar=False)[0,1]
+            ALL = np.corrcoef(_values, m, rowvar=False)[0,1]
 
             #if np.any(np.array([ALL, AC, DC]) > 0.7):
             #    print(f"{record}: {metric_name}_{str(VGM.directed)}_{str(VGM.edge_weight)}_{VGM.beats_per_window} \t AC: {AC} \t DC: {DC} \t ALL: {ALL}")
@@ -75,10 +80,10 @@ def calc_correlations(values, indices, labels, rr, record, VGM, metrics):
         df.to_csv(path_output, index=False, mode='a', header=False)   
 
 # %%
-beats_per_window = 4
+beats_per_window = [8,16,32]
 freq_domain = False
 directions = [None, 'left_to_right']
-edge_weights = [None, 'slope', 'angle', 'v_distance']#'abs_slope', 'abs_angle', 'distance', 'sq_distance', 'abs_v_distance', 'h_distance', 'abs_h_distance' 
+edge_weights = [None, 'slope', 'angle', 'v_distance','abs_slope', 'abs_angle', 'distance', 'sq_distance', 'abs_v_distance', 'h_distance', 'abs_h_distance']
 metrics=['minimum_cut_value_left_to_right', 'maximum_flow_value_left_to_right', 'shortest_path_length_left_to_right', 'dag_longest_path_length']
 # VGM = VisGraphMetric(edge_weight="slope", direction=None, freq_domain=freq_domain, beats_per_window=beats_per_window, beats_per_step=1)
 
@@ -89,16 +94,18 @@ def correlation_per_record(record):
 
     # calculate AC/DC
     values, labels, indices = segmentwise_ACDC(rr, fs)
+    
     values = values[labels != "outlier"]
     indices = indices[labels != "outlier"]
     labels = labels[labels != "outlier"]
 
     # calculate graph metrics
-    for edge_weight in edge_weights:
-        for direction in directions:
-            VGM = VisGraphMetric(edge_weight=edge_weight, direction=direction, freq_domain=freq_domain, beats_per_window=beats_per_window, beats_per_step=1)
-            #metrics = VGM.get_available_metrics()
-            calc_correlations(values, indices, labels, rr, record, VGM, metrics)
+    for bpw in beats_per_window:
+      for edge_weight in edge_weights:
+         for direction in directions:
+               VGM = VisGraphMetric(edge_weight=edge_weight, direction=direction, freq_domain=freq_domain, beats_per_window=bpw, beats_per_step=1)
+               #metrics = VGM.get_available_metrics()
+               calc_correlations(values, indices, labels, rr, record, VGM, metrics)
 
 RMD = ReadMainzData()
 # for record in tqdm(RMD.get_record_list(num=40), desc="records"):
@@ -107,8 +114,12 @@ RMD = ReadMainzData()
 
 
 print("Number of processors: ", mp.cpu_count())
+
+
+files = [os.path.splitext(filename)[0] for filename in os.listdir(path_rpeaks)]
+#files = RMD.get_record_list(start=140, num=160)
 pool = mp.Pool(processes=mp.cpu_count())
-for result in tqdm(pool.imap(correlation_per_record, RMD.get_record_list(start=0, num=140)), total=140, desc="records"):
+for result in tqdm(pool.imap(correlation_per_record, files), total=len(files), desc="records"):
     pass
 
 
