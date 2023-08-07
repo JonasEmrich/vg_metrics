@@ -36,7 +36,7 @@ class ReadMainzData():
 
 
     def get_record_list(self, start=0, num=None):
-        """ Returns a list of all records, or if 'num' is specified, only the prvided number of records. """
+        """ Returns a list of all records. If 'num' is specified, only the provided number of records is returned. """
         end = None if num is None else num+start
         return self.records[start:end]
     
