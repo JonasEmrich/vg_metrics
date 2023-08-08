@@ -127,7 +127,7 @@ class VisGraphMetric:
         self.freq_domain = freq_domain
 
 
-    def calc_metric(self, rr_series, window_idxs=None, metrics="all", quiet=False):
+    def calc_metric(self, rr_series, window_idxs=None, metrics="all", skip_outlier=False, quiet=False):
         """ Calculate several graph metrics on the visibility graph of the given signal. 
         For this, the signal is partitioned into overlapping segments for which the visibility graph and the graph metric is computed. 
 
@@ -138,11 +138,13 @@ class VisGraphMetric:
         window_idxs: np.array
             Array of the starting indices of each window, for setting manually the window positions. If argument is not `None`, the `beats_per_step`
             argument is ignored and the given indices are used to determine the window positions.
-        metrics : 
+        metrics: np.array/str
             defaults to `"all"` which results in the calculation of all available metrics, while passing a list of the preferred metrics 
             result in the calculation of those (e.g. `['average_clustering','node_connectivity']`).
             NOTE: The choice of whether using a directed or undirected graph results in a different set of available metrics!
-        quiet: 
+        skip_outlier: bool
+            if `True` segments are skipped where the center deviates more than 5% from the previous one. defaults to `False` 
+        quiet: bool
             specifies if warnings are displayed when trying to calculate metrics that are not supported for the current choice of parameters.
             If 'False' the metric is skipped without printing a message. Defaults to False.
             
@@ -204,6 +206,11 @@ class VisGraphMetric:
             r = l + M
             if r > N:
                 r = N
+
+            # compare center of segment to previous, reducing outliers
+            c = l+M//2
+            if skip_outlier and not 1.05 * rr_series[c-step] > rr_series[c] > 0.95 * rr_series[c-step]:
+                continue
 
             s = rr_series[l:r]
 
