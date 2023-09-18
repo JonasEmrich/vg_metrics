@@ -210,6 +210,7 @@ class VisGraphMetric:
             # compare center of segment to previous, reducing outliers
             c = l+M//2
             if skip_outlier and not 1.05 * rr_series[c-step] > rr_series[c] > 0.95 * rr_series[c-step]:
+                output[name][1][jj] = np.nan
                 continue
 
             s = rr_series[l:r]
@@ -229,6 +230,13 @@ class VisGraphMetric:
                 # # # Update weight vector # # #
                 output[name][0][jj] = function(G)
                 output[name][1][jj] = l
+
+        ### remove nan
+        if skip_outlier:
+            for name in output.keys():
+                selector = ~np.isnan(output[name][1])
+                output[name] = (output[name][0][selector], output[name][1][selector])
+                
 
         return output
 
